@@ -13,9 +13,12 @@ def get_filename(response, width):
     global file_counter
     filename = f"{file_counter:0{width}}"
     file_counter += 1
-    find_filename = re.search(
-        r'filename="(.*)"', response.headers["Content-Disposition"]
-    )
+    try:
+        find_filename = re.search(
+            r'filename="(.*)"', response.headers["Content-Disposition"]
+        )
+    except KeyError:
+        find_filename = False
     if find_filename:
         filename += "-" + unquote(find_filename.group(1)).replace(" ", "-")
     else:
@@ -48,9 +51,14 @@ def main():
     hackmd_urls = []
     root_content = root_response.text
     for line in root_content.split("\n"):
-        find_hackmd_url = re.search(r"(https://hackmd.io/.*)\)", line)
+        find_hackmd_url = re.search(r"\((https://hackmd.io/.*)\)", line)
         if find_hackmd_url:
             hackmd_urls.append(find_hackmd_url.group(1))
+            continue
+        find_hackmd_url = re.search(r"\(/(.*)\)", line)
+        if find_hackmd_url:
+            hackmd_urls.append("https://hackmd.io/" + find_hackmd_url.group(1))
+            continue
 
     # Make the width of the prefix index
     width = len(str(len(hackmd_urls) + 1))
