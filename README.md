@@ -50,3 +50,57 @@ No filename found. Using default name.
 18-讓筆記更活潑？加上-Emoji-吧.md
 ...
 ```
+
+## Sync with github action
+
+`.github/workflows/sync.yml`, remember to replace `<your hackmd bookmode url>`:
+
+```yaml
+name: Sync from HackMD
+
+on:
+  schedule: # execute every 24 hours
+    - cron: "* */24 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - run: curl -s https://raw.githubusercontent.com/aben20807/FetcH/master/fetch.py | python3 - <your hackmd bookmode url>
+
+      - name: Retrieve commit message
+        run: | # https://trstringer.com/github-actions-multiline-strings/
+          CMT_MSG=$(cat << EOF
+          Synced `date '+%Y-%m-%d %H:%M:%S %:::z'`
+          EOF
+          )
+          echo "CMT_MSG<<EOF" >> $GITHUB_ENV
+          echo "$CMT_MSG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        id: message
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        id: auto-commit-action
+        with:
+          commit_message: ${{ env.CMT_MSG }}
+      
+      - name: "Run if no changes have been detected"
+        if: steps.auto-commit-action.outputs.changes_detected == 'false'
+        run: echo "No Changes!"
+```
+
+## License
+
+MIT
