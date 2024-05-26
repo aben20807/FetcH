@@ -81,7 +81,7 @@ jobs:
       - name: Sync from HackMD
         run: |
           rm -r docs/
-          curl -s https://raw.githubusercontent.com/aben20807/FetcH/master/fetch.py | python3 - https://hackmd.io/@aben20807/HyKAHCfg0
+          curl -s https://raw.githubusercontent.com/aben20807/FetcH/master/fetch.py | python3 - <your hackmd bookmode url>
 
       - name: Retrieve commit message
         run: | # https://trstringer.com/github-actions-multiline-strings/
