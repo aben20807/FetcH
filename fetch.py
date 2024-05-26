@@ -1,18 +1,14 @@
 import argparse
+import multiprocessing
+import os
 import requests
 import re
-import os
 
 from urllib.parse import unquote
 
 
-file_counter = 0
-
-
-def get_filename(response, width):
-    global file_counter
-    filename = f"{file_counter:0{width}}"
-    file_counter += 1
+def get_filename(response, index, width):
+    filename = f"{index:0{width}}"
     try:
         find_filename = re.search(
             r'filename="(.*)"', response.headers["Content-Disposition"]
@@ -22,7 +18,7 @@ def get_filename(response, width):
     if find_filename:
         filename += "-" + unquote(find_filename.group(1)).replace(" ", "-")
     else:
-        print("No filename found. Using default name.")
+        print("[WARN] No filename found. Using default name.")
         filename += ".md"
     return filename
 
@@ -36,6 +32,23 @@ def get_args():
     parser.add_argument("url", type=str, help="Root URL of HackMD bookmode")
     parser.add_argument("--dir", type=str, default="docs/", help="Output directory")
     return parser.parse_args()
+
+
+def worker(hackmd_url, root_dir, index, width):
+    hackmd_response = requests.get(hackmd_url + "/download")
+    if hackmd_response.status_code == 403:
+        print(
+            f"[ERROR] 403 Forbidden: `{hackmd_url}`. You may need to change the share configuration."
+        )
+        return
+    if hackmd_response.status_code != 200:
+        print(f"[ERROR] Unknown error for downloading `{hackmd_url}`.")
+        return
+    hackmd_content = hackmd_response.text
+    hackmd_filename = get_filename(hackmd_response, index, width)
+    print(f"[INFO] {hackmd_filename}")
+    with open(root_dir + hackmd_filename, "w", encoding="utf-8") as hackmd_file:
+        hackmd_file.write(hackmd_content)
 
 
 def main():
@@ -62,8 +75,8 @@ def main():
 
     # Make the width of the prefix index
     width = len(str(len(hackmd_urls) + 1))
-    root_filename = get_filename(root_response, width)
-    print(root_filename)
+    root_filename = get_filename(root_response, 0, width)
+    print(f"[INFO] {root_filename}")
 
     # Write root file
     os.makedirs(root_dir, exist_ok=True)
@@ -71,13 +84,14 @@ def main():
         root_file.write(root_content)
 
     # Fetch and write files
-    for hackmd_url in hackmd_urls:
-        hackmd_response = requests.get(hackmd_url + "/download")
-        hackmd_content = hackmd_response.text
-        hackmd_filename = get_filename(hackmd_response, width)
-        print(hackmd_filename)
-        with open(root_dir + hackmd_filename, "w", encoding="utf-8") as hackmd_file:
-            hackmd_file.write(hackmd_content)
+    with multiprocessing.Pool() as pool:
+        pool.starmap(
+            worker,
+            [
+                (hackmd_url, root_dir, index + 1, width)
+                for index, hackmd_url in enumerate(hackmd_urls)
+            ],
+        )
 
 
 if __name__ == "__main__":
