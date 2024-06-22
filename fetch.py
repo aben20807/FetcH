@@ -18,7 +18,7 @@ def get_filename(response, index, width):
     if find_filename:
         filename += "-" + unquote(find_filename.group(1)).replace(" ", "-")
     else:
-        print("[WARN] No filename found. Using default name.")
+        print("[WARN] No filename found. Using default name.", flush=True)
         filename += ".md"
     return filename
 
@@ -38,15 +38,16 @@ def worker(hackmd_url, root_dir, index, width):
     hackmd_response = requests.get(hackmd_url + "/download")
     if hackmd_response.status_code == 403:
         print(
-            f"[ERROR] 403 Forbidden: `{hackmd_url}`. You may need to change the share configuration."
+            f"[ERROR] 403 Forbidden: `{hackmd_url}`. You may need to change the share configuration.",
+            flush=True,
         )
         return
     if hackmd_response.status_code != 200:
-        print(f"[ERROR] Unknown error for downloading `{hackmd_url}`.")
+        print(f"[ERROR] Unknown error for downloading `{hackmd_url}`.", flush=True)
         return
     hackmd_content = hackmd_response.text
     hackmd_filename = get_filename(hackmd_response, index, width)
-    print(f"[INFO] {hackmd_filename}")
+    print(f"[INFO] {hackmd_filename}", flush=True)
     with open(root_dir + hackmd_filename, "w", encoding="utf-8") as hackmd_file:
         hackmd_file.write(hackmd_content)
 
@@ -76,7 +77,7 @@ def main():
     # Make the width of the prefix index
     width = len(str(len(hackmd_urls) + 1))
     root_filename = get_filename(root_response, 0, width)
-    print(f"[INFO] {root_filename}")
+    print(f"[INFO] {root_filename}", flush=True)
 
     # Write root file
     os.makedirs(root_dir, exist_ok=True)
