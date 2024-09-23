@@ -38,12 +38,12 @@ def worker(hackmd_url, root_dir, index, width):
     hackmd_response = requests.get(hackmd_url + "/download")
     if hackmd_response.status_code == 403:
         print(
-            f"[ERROR] 403 Forbidden: `{hackmd_url}`. You may need to change the share configuration.",
+            f"[ERROR] 403 Forbidden: {hackmd_url} You may need to change the share configuration.",
             flush=True,
         )
         return
     if hackmd_response.status_code != 200:
-        print(f"[ERROR] Unknown error for downloading `{hackmd_url}`.", flush=True)
+        print(f"[ERROR] Unknown error for downloading {hackmd_url}", flush=True)
         return
     hackmd_content = hackmd_response.text
     hackmd_filename = get_filename(hackmd_response, index, width)
